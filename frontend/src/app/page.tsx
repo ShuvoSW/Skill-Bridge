@@ -62,6 +62,7 @@ export default function Home() {
         </div>
       </main> */}
       <Button>Click me</Button>
+      <h1>Home</h1>
     </div>
   );
 }
