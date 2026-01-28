@@ -27,7 +27,7 @@ interface Footer2Props {
   }[];
 }
 
-const Footer2 = ({
+const Footer = ({
   logo = {
     src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/block-1.svg",
     alt: "blocks for shadcn/ui",
@@ -86,8 +86,8 @@ const Footer2 = ({
     <section className={cn("py-32", className)}>
       <div className="container">
         <footer>
-          <div className="grid grid-cols-2 gap-8 lg:grid-cols-6">
-            <div className="col-span-2 mb-8 lg:mb-0">
+          <div className=" grid grid-cols-2 gap-8 lg:grid-cols-6">
+            <div className=" p-4 col-span-2 mb-8 lg:mb-0">
               <div className="flex items-center gap-2 lg:justify-start">
                 <Logo url="https://shadcnblocks.com">
                   <LogoImage
@@ -102,7 +102,7 @@ const Footer2 = ({
               <p className="mt-4 font-bold">{tagline}</p>
             </div>
             {menuItems.map((section, sectionIdx) => (
-              <div key={sectionIdx}>
+              <div className="p-4"  key={sectionIdx}>
                 <h3 className="mb-4 font-bold">{section.title}</h3>
                 <ul className="space-y-4 text-muted-foreground">
                   {section.links.map((link, linkIdx) => (
@@ -133,4 +133,4 @@ const Footer2 = ({
   );
 };
 
-export { Footer2 };
+export { Footer };
