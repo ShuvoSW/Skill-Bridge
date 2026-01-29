@@ -1,80 +1,70 @@
-"use client"
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-
-interface Login1Props {
-  heading?: string;
-  logo: {
-    url: string;
-    src: string;
-    alt: string;
-    title?: string;
-    className?: string;
-  };
-  buttonText?: string;
-  googleText?: string;
-  signupText?: string;
-  signupUrl?: string;
-  className?: string;
-}
-
-export const LoginForm = ({
-  heading = "Login",
-  logo = {
-    url: "https://www.shadcnblocks.com",
-    src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/logos/shadcnblockscom-wordmark.svg",
-    alt: "logo",
-    title: "shadcnblocks.com",
-  },
-  buttonText = "Login",
-  signupText = "Need an account?",
-  signupUrl = "https://shadcnblocks.com",
+export function LoginForm({
   className,
-}: Login1Props) => {
+  ...props
+}: React.ComponentProps<"div">) {
   return (
-    <section className={cn("h-screen bg-muted", className)}>
-      <div className="flex h-full items-center justify-center">
-        {/* Logo */}
-        <div className="flex flex-col items-center gap-6 lg:justify-start">
-          <a href={logo.url}>
-            <img
-              src={logo.src}
-              alt={logo.alt}
-              title={logo.title}
-              className="h-10 dark:invert"
-            />
-          </a>
-          <div className="flex w-full max-w-sm min-w-sm flex-col items-center gap-y-4 rounded-md border border-muted bg-background px-6 py-8 shadow-md">
-            {heading && <h1 className="text-xl font-semibold">{heading}</h1>}
-            <Input
-              type="email"
-              placeholder="Email"
-              className="text-sm"
-              required
-            />
-            <Input
-              type="password"
-              placeholder="Password"
-              className="text-sm"
-              required
-            />
-            <Button type="submit" className="w-full">
-              {buttonText}
-            </Button>
-          </div>
-          <div className="flex justify-center gap-1 text-sm text-muted-foreground">
-            <p>{signupText}</p>
-            <a
-              href={signupUrl}
-              className="font-medium text-primary hover:underline"
-            >
-              Sign up
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-};
+    <div className={cn("flex flex-col gap-6", className)} {...props}>
+      <Card>
+        <CardHeader>
+          <CardTitle>Login to your account</CardTitle>
+          <CardDescription>
+            Enter your email below to login to your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="m@example.com"
+                  required
+                />
+              </Field>
+              <Field>
+                <div className="flex items-center">
+                  <FieldLabel htmlFor="password">Password</FieldLabel>
+                  <a
+                    href="#"
+                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+                  >
+                    Forgot your password?
+                  </a>
+                </div>
+                <Input id="password" type="password" required />
+              </Field>
+              <Field>
+                <Button type="submit">Login</Button>
+                <Button variant="outline" type="button">
+                  Login with Google
+                </Button>
+                <FieldDescription className="text-center">
+                  Don&apos;t have an account? <a href="#">Sign up</a>
+                </FieldDescription>
+              </Field>
+            </FieldGroup>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
