@@ -31,8 +31,8 @@ const Footer = ({
   logo = {
     src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/block-1.svg",
     alt: "blocks for shadcn/ui",
-    title: "Shadcnblocks.com",
-    url: "https://www.shadcnblocks.com",
+    title: "Logo",
+    url: "",
   },
   className,
   tagline = "Components made easy.",
@@ -84,7 +84,7 @@ const Footer = ({
 }: Footer2Props) => {
   return (
     <section className={cn("py-32", className)}>
-      <div className="container">
+      <div className="container mx-auto">
         <footer>
           <div className=" grid grid-cols-2 gap-8 lg:grid-cols-6">
             <div className=" p-4 col-span-2 mb-8 lg:mb-0">
@@ -117,7 +117,7 @@ const Footer = ({
               </div>
             ))}
           </div>
-          <div className="mt-24 flex flex-col justify-between gap-4 border-t pt-8 text-sm font-medium text-muted-foreground md:flex-row md:items-center">
+          <div className="p-4 mt-24 flex flex-col justify-between gap-4 border-t pt-8 text-sm font-medium text-muted-foreground md:flex-row md:items-center">
             <p>{copyright}</p>
             <ul className="flex gap-4">
               {bottomLinks.map((link, linkIdx) => (
