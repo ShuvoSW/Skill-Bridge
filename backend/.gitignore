@@ -54,6 +54,8 @@ coverage/
 .vercel
 .DS_Store
 
+api/server.mjs
+
 package-lock.json
 pnpm-lock.yaml
 bun.lock
