@@ -80,8 +80,6 @@
 //   )
 // }
 
-
-
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -109,11 +107,7 @@ const formSchema = z.object({
   email: z.email(),
 })
 
-
-
 export function RegisterForm({ ...props }: React.ComponentProps<typeof Card>) {
-
-
 
   const form = useForm({
     defaultValues: {
@@ -155,9 +149,6 @@ export function RegisterForm({ ...props }: React.ComponentProps<typeof Card>) {
             e.preventDefault();
             form.handleSubmit();
           }}>
-
-
-
           <FieldGroup>
 
             {/* <form.Field name="email" children={(field) => {
@@ -204,45 +195,45 @@ export function RegisterForm({ ...props }: React.ComponentProps<typeof Card>) {
 
             <form.Field name="email">
               {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid;
-              return (
-                <Field>
-                  <FieldLabel htmlFor={field.name}>Email</FieldLabel>
-                  <Input
-                    type="email"
-                    id={field.name}
-                    name={field.name}
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                  />
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
-                </Field>
-              )
-            }} 
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+                    <Input
+                      type="email"
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             </form.Field>
-            <form.Field name="password"> 
+            <form.Field name="password">
               {(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid;
-              return (
-                <Field>
-                  <FieldLabel htmlFor={field.name}>Password</FieldLabel>
-                  <Input
-                    type="password"
-                    id={field.name}
-                    name={field.name}
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                  />
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
-                </Field>
-              )
-            }} 
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>Password</FieldLabel>
+                    <Input
+                      type="password"
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             </form.Field>
           </FieldGroup>
 
@@ -250,10 +241,7 @@ export function RegisterForm({ ...props }: React.ComponentProps<typeof Card>) {
       </CardContent>
 
       <CardFooter className="flex flex-col gap-5 justify-end">
-
         <Button form="login-form" type="submit" className="w-full">Register</Button>
-
-
       </CardFooter>
     </Card>
   )
