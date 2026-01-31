@@ -1,0 +1,431 @@
+import { prisma } from "../../lib/prisma";
+
+// Get all bookings
+const getAllBookings = async (userId: string, userRole: string) => {
+  // Admin sees all bookings
+  if (userRole === "ADMIN") {
+    const bookings = await prisma.booking.findMany({
+      include: {
+        student: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+          },
+        },
+        tutor: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        startTime: "desc",
+      },
+    });
+    return bookings;
+  }
+
+  // Tutor sees bookings where they are the tutor
+  if (userRole === "TUTOR") {
+    const tutorProfile = await prisma.tutorProfile.findFirst({
+      where: { userId },
+    });
+
+    if (!tutorProfile) {
+      throw new Error("Tutor profile not found");
+    }
+
+    const bookings = await prisma.booking.findMany({
+      where: {
+        tutorId: tutorProfile.id,
+      },
+      include: {
+        student: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+          },
+        },
+        tutor: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        startTime: "desc",
+      },
+    });
+    return bookings;
+  }
+
+  // Student sees their own bookings
+  const bookings = await prisma.booking.findMany({
+    where: {
+      studentId: userId,
+    },
+    include: {
+      student: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+        },
+      },
+      tutor: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      startTime: "desc",
+    },
+  });
+
+  return bookings;
+};
+
+// Get single booking by ID
+const getBookingById = async (
+  bookingId: string,
+  userId: string,
+  userRole: string,
+) => {
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: {
+      student: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+        },
+      },
+      tutor: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!booking) {
+    return null;
+  }
+
+  // Admin can view any booking
+  if (userRole === "ADMIN") {
+    return booking;
+  }
+
+  // Tutor can view bookings where they are the tutor
+  if (userRole === "TUTOR") {
+    const tutorProfile = await prisma.tutorProfile.findFirst({
+      where: { userId },
+    });
+
+    if (tutorProfile && booking.tutorId === tutorProfile.id) {
+      return booking;
+    }
+  }
+
+  // Student can view their own bookings
+  if (booking.studentId === userId) {
+    return booking;
+  }
+
+  throw new Error("You don't have permission to view this booking");
+};
+
+// Create new booking
+const createBooking = async (
+  studentId: string,
+  data: {
+    tutorId: string;
+    startTime: Date;
+    endTime: Date;
+  },
+) => {
+  // Check if tutor exists
+  const tutor = await prisma.tutorProfile.findUnique({
+    where: { id: data.tutorId },
+  });
+
+  if (!tutor) {
+    throw new Error("Tutor not found");
+  }
+
+  // Validate times
+  if (data.startTime >= data.endTime) {
+    throw new Error("End time must be after start time");
+  }
+
+  // Check if start time is in the future
+  if (data.startTime < new Date()) {
+    throw new Error("Booking must be in the future");
+  }
+
+  // Create booking
+  const booking = await prisma.booking.create({
+    data: {
+      studentId,
+      tutorId: data.tutorId,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      status: "confirmed", // Instant confirmation
+    },
+    include: {
+      tutor: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+            },
+          },
+        },
+      },
+      student: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+        },
+      },
+    },
+  });
+
+  return booking;
+};
+
+// Update booking
+const updateBookingStatus = async (
+  bookingId: string,
+  userId: string,
+  userRole: string,
+  status: "confirmed" | "cancelled" | "completed",
+) => {
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: {
+      tutor: true,
+    },
+  });
+
+  if (!booking) {
+    throw new Error("Booking not found");
+  }
+
+  // Validate status transitions based on user role
+  if (status === "completed") {
+    // Only tutor can mark as completed
+    if (userRole !== "TUTOR") {
+      throw new Error("Only tutors can mark sessions as completed");
+    }
+    const tutorProfile = await prisma.tutorProfile.findFirst({
+      where: { userId },
+    });
+    if (!tutorProfile || booking.tutorId !== tutorProfile.id) {
+      throw new Error("You can only mark your own sessions as completed");
+    }
+    // Can only mark confirmed bookings as completed
+    if (booking.status !== "confirmed") {
+      throw new Error("Only confirmed bookings can be marked as completed");
+    }
+  } else if (status === "cancelled") {
+    // Only student can cancel
+    if (userRole !== "STUDENT") {
+      throw new Error("Only students can cancel bookings");
+    }
+    if (booking.studentId !== userId) {
+      throw new Error("You can only cancel your own bookings");
+    }
+    // Can only cancel confirmed bookings
+    if (booking.status !== "confirmed") {
+      throw new Error("Only confirmed bookings can be cancelled");
+    }
+  }
+
+  // Update booking status
+  const updatedBooking = await prisma.booking.update({
+    where: { id: bookingId },
+    data: { status },
+    include: {
+      tutor: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+            },
+          },
+        },
+      },
+      student: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+        },
+      },
+    },
+  });
+
+  return updatedBooking;
+};
+
+// Delete booking student and admin
+const deleteBooking = async (
+  bookingId: string,
+  userId: string,
+  userRole: string,
+) => {
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+  });
+
+  if (!booking) {
+    throw new Error("Booking not found");
+  }
+
+  // Student and admin can delete
+  if (userRole !== "ADMIN" && booking.studentId !== userId) {
+    throw new Error("You don't have permission to delete this booking");
+  }
+
+  // Can only delete confirmed bookings (changed from pending)
+  if (booking.status !== "confirmed") {
+    throw new Error("Only confirmed bookings can be deleted");
+  }
+
+  await prisma.booking.delete({
+    where: { id: bookingId },
+  });
+
+  return true;
+};
+
+// Get tutor profile by userId
+const getTutorProfileByUserId = async (userId: string) => {
+  // Find the first tutor profile for this user
+  return prisma.tutorProfile.findFirst({ where: { userId } });
+};
+
+// Get tutor profile by tutorId
+// const getTutorProfileByTutorId = async (tutorId: string) => {
+//   return prisma.tutorProfile.findUnique({ where: { id: tutorId } });
+// };
+
+// Get bookings by tutorId
+const getBookingsByTutorId = async (tutorId: string) => {
+  return prisma.booking.findMany({
+    where: { tutorId },
+    include: {
+      student: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+        },
+      },
+      tutor: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: { startTime: "desc" },
+  });
+};
+// Get bookings by tutor's userId directly
+const getBookingsByTutorUserId = async (userId: string) => {
+  return prisma.booking.findMany({
+    where: {
+      tutor: {
+        userId,
+      },
+    },
+    include: {
+      student: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+        },
+      },
+      tutor: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: { startTime: "desc" },
+  });
+};
+
+export const bookingService = {
+  getAllBookings,
+  getBookingById,
+  createBooking,
+  updateBookingStatus,
+  deleteBooking,
+  getBookingsByTutorId,
+  getBookingsByTutorUserId,
+};
