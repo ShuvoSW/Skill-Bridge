@@ -18,10 +18,34 @@ app.use(cors({
 
 app.use(express.json());
 
-app.all("/api/auth/*splat", toNodeHandler(auth))
+
+
+
+app.get("/api/auth/test", (req, res) => res.send("auth route works"));
+
+app.use("/api/auth", (req, res, next) => {
+    return toNodeHandler(auth)(req, res).catch((err) => {
+        next(err);
+    });
+});
+
+app.use("/api/students", studentRoutes);
 
 app.get("/", (req, res) => {
-    res.send("Hello World")
-})
+  res.json({
+    success: true,
+    message: "SkillBridge API is running",
+    version: "1.0.0",
+    endpoints: {
+      auth: "/api/auth/*",
+      students: "/api/students",
+    },
+  });
+});
+
+app.use(notFound);
+
+
+app.use(errorHandler);
 
 export default app;
