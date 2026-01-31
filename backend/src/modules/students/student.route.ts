@@ -2,7 +2,7 @@ import { Router } from "express";
 import { StudentController } from "./student.controller";
 import auth from "../../middlewares/auth";
 
-const router = Router();
+const router: Router = Router();
 
 // Student profile routes (authenticated users)
 router.get("/profile", auth(), StudentController.getMyProfile);
