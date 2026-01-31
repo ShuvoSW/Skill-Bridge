@@ -1,0 +1,447 @@
+// Get tutor profile by userId (for authenticated tutor profile page)
+const getTutorByUserId = async (userId: string) => {
+  const tutor = await prisma.tutorProfile.findFirst({
+    where: { userId },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          createdAt: true,
+        },
+      },
+      categories: true,
+      reviews: {
+        include: {
+          student: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      },
+    },
+  });
+  return tutor;
+};
+import { prisma } from "../../lib/prisma";
+
+// Get all tutors with optional filters
+const getAllTutors = async (filters: {
+  subjects?: string[];
+  minRate?: number;
+  maxRate?: number;
+  minExperience?: number;
+  categoryId?: string;
+}) => {
+  const tutors = await prisma.tutorProfile.findMany({
+    where: {
+      ...(filters.subjects?.length && {
+        subjects: { hasSome: filters.subjects },
+      }),
+      ...(filters.categoryId && {
+        categories: {
+          some: {
+            id: filters.categoryId,
+          },
+        },
+      }),
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+        },
+      },
+      categories: true,
+      reviews: {
+        select: {
+          rating: true,
+        },
+      },
+    },
+    orderBy: {
+      user: {
+        createdAt: "desc",
+      },
+    },
+  });
+
+  // Filter by rate and experience
+  const filteredTutors = tutors.filter((tutor) => {
+    if (filters.minRate && Number(tutor.hourlyRate) < filters.minRate)
+      return false;
+    if (filters.maxRate && Number(tutor.hourlyRate) > filters.maxRate)
+      return false;
+    if (filters.minExperience && tutor.experience < filters.minExperience)
+      return false;
+    return true;
+  });
+
+  return filteredTutors;
+};
+
+// Get featured tutors (top rated with reviews)
+const getFeaturedTutors = async (limit: number = 6) => {
+  const tutors = await prisma.tutorProfile.findMany({
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          status: true,
+        },
+      },
+      categories: true,
+      reviews: {
+        select: {
+          rating: true,
+        },
+      },
+    },
+  });
+
+  // Calculate average rating and filter active tutors
+  const tutorsWithRating = tutors
+    .filter(
+      (tutor) => tutor.user.status === "ACTIVE" && tutor.reviews.length > 0,
+    )
+    .map((tutor) => {
+      const avgRating =
+        tutor.reviews.reduce((sum, review) => sum + review.rating, 0) /
+        tutor.reviews.length;
+      return {
+        ...tutor,
+        averageRating: parseFloat(avgRating.toFixed(2)),
+        reviewCount: tutor.reviews.length,
+      };
+    })
+    .sort((a, b) => {
+      // Sort by rating first, then by review count
+      if (b.averageRating !== a.averageRating) {
+        return b.averageRating - a.averageRating;
+      }
+      return b.reviewCount - a.reviewCount;
+    })
+    .slice(0, limit);
+
+  return tutorsWithRating;
+};
+
+// Get all tutors who have availability
+const getAvailableTutors = async () => {
+  const allTutors = await prisma.tutorProfile.findMany({
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+        },
+      },
+      categories: true,
+      reviews: {
+        select: {
+          rating: true,
+        },
+      },
+    },
+    orderBy: {
+      user: {
+        createdAt: "desc",
+      },
+    },
+  });
+
+  // Filter tutors who have availability set
+  return allTutors.filter((tutor) => tutor.availability !== null);
+};
+
+// Get single tutor by ID
+const getTutorById = async (tutorId: string) => {
+  const tutor = await prisma.tutorProfile.findUnique({
+    where: { id: tutorId },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          createdAt: true,
+        },
+      },
+      categories: true,
+      reviews: {
+        include: {
+          student: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      },
+    },
+  });
+
+  if (!tutor) {
+    return null;
+  }
+
+  return tutor;
+};
+
+// Get tutor's availability
+const getTutorAvailability = async (tutorId: string) => {
+  const tutor = await prisma.tutorProfile.findUnique({
+    where: { id: tutorId },
+    select: {
+      availability: true,
+    },
+  });
+
+  return tutor?.availability || null;
+};
+
+// Create tutor profile for a user
+const createTutorProfile = async (
+  userId: string,
+  data: {
+    bio: string;
+    subjects: string[];
+    hourlyRate: number;
+    experience: number;
+    availability?: any;
+  },
+) => {
+  // Check if user already has a tutor profile
+  const existingProfile = await prisma.tutorProfile.findFirst({
+    where: { userId },
+  });
+
+  if (existingProfile) {
+    throw new Error("User already has a tutor profile");
+  }
+
+  // Check if user exists
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  // Create tutor profile and update user role in a transaction, so that if middle of the process aborts whole process rolls back
+  return await prisma.$transaction(async (tx) => {
+    const profile = await tx.tutorProfile.create({
+      data: {
+        userId,
+        bio: data.bio,
+        subjects: data.subjects,
+        hourlyRate: data.hourlyRate,
+        experience: data.experience,
+        availability: data.availability || null,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+          },
+        },
+      },
+    });
+
+    // Update user role to TUTOR
+    await tx.user.update({
+      where: { id: userId },
+      data: { role: "TUTOR" },
+    });
+
+    return profile;
+  });
+};
+
+// Update tutor profile by tutorId
+const updateTutorProfile = async (
+  tutorId: string,
+  userId: string,
+  userRole: string,
+  data: {
+    bio?: string;
+    subjects?: string[];
+    hourlyRate?: number;
+    experience?: number;
+    availability?: any;
+  },
+) => {
+  const tutor = await prisma.tutorProfile.findUnique({
+    where: { id: tutorId },
+  });
+
+  if (!tutor) {
+    throw new Error("Tutor profile not found");
+  }
+
+  // only tutor himself and admin can update the profile
+  if (userRole !== "ADMIN" && tutor.userId !== userId) {
+    throw new Error("You don't have permission to update this tutor profile");
+  }
+
+  const updateData: any = {};
+
+  if (data.bio) updateData.bio = data.bio;
+  if (data.subjects) updateData.subjects = data.subjects;
+  if (data.hourlyRate) updateData.hourlyRate = data.hourlyRate;
+  if (data.experience !== undefined) updateData.experience = data.experience;
+  if (data.availability !== undefined)
+    updateData.availability = data.availability;
+
+  return await prisma.tutorProfile.update({
+    where: { id: tutorId },
+    data: updateData,
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+        },
+      },
+    },
+  });
+};
+
+// Update tutor profile by userId
+const updateMyProfileByUserId = async (
+  userId: string,
+  data: {
+    bio?: string;
+    subjects?: string[];
+    hourlyRate?: number;
+    experience?: number;
+    availability?: any;
+  },
+) => {
+  // Find tutor profile by userId
+  const tutor = await prisma.tutorProfile.findFirst({
+    where: { userId },
+  });
+
+  if (!tutor) {
+    throw new Error("Tutor profile not found");
+  }
+
+  const updateData: any = {};
+
+  if (data.bio) updateData.bio = data.bio;
+  if (data.subjects) updateData.subjects = data.subjects;
+  if (data.hourlyRate) updateData.hourlyRate = data.hourlyRate;
+  if (data.experience !== undefined) updateData.experience = data.experience;
+  if (data.availability !== undefined)
+    updateData.availability = data.availability;
+
+  return await prisma.tutorProfile.update({
+    where: { id: tutor.id },
+    data: updateData,
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+        },
+      },
+    },
+  });
+};
+
+// Update tutor's availability only
+const updateMyAvailability = async (userId: string, availability: any) => {
+  // Find tutor profile by userId
+  const tutor = await prisma.tutorProfile.findFirst({
+    where: { userId },
+  });
+
+  if (!tutor) {
+    throw new Error("Tutor profile not found");
+  }
+
+  return await prisma.tutorProfile.update({
+    where: { id: tutor.id },
+    data: { availability },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+        },
+      },
+    },
+  });
+};
+
+// Delete tutor profile
+const deleteTutorProfile = async (
+  tutorId: string,
+  userId: string,
+  userRole: string,
+) => {
+  const tutor = await prisma.tutorProfile.findUnique({
+    where: { id: tutorId },
+  });
+
+  if (!tutor) {
+    throw new Error("Tutor profile not found");
+  }
+
+  if (userRole !== "ADMIN" && tutor.userId !== userId) {
+    throw new Error("You don't have permission to delete this tutor profile");
+  }
+
+  // Delete profile
+  return await prisma.$transaction(async (tx) => {
+    await tx.tutorProfile.delete({
+      where: { id: tutorId },
+    });
+  });
+};
+
+export const tutorService = {
+  getAllTutors,
+  getFeaturedTutors,
+  getAvailableTutors,
+  getTutorById,
+  getTutorAvailability,
+  createTutorProfile,
+  getTutorByUserId,
+  updateTutorProfile,
+  updateMyProfileByUserId,
+  updateMyAvailability,
+  deleteTutorProfile,
+};

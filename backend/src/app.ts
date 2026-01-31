@@ -5,6 +5,8 @@ import { toNodeHandler } from "better-auth/node";
 import errorHandler from "./middlewares/globalErrorHandler";
 import { notFound } from "./middlewares/notFound";
 
+import tutorRoutes from "./modules/tutors/tutor.route";
+import adminRoutes from "./modules/admin/admin.route";
 import studentRoutes from "./modules/students/student.route";
 
 
@@ -29,6 +31,8 @@ app.use("/api/auth", (req, res, next) => {
     });
 });
 
+app.use("/api/tutors", tutorRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api/students", studentRoutes);
 
 app.get("/", (req, res) => {
@@ -38,6 +42,8 @@ app.get("/", (req, res) => {
     version: "1.0.0",
     endpoints: {
       auth: "/api/auth/*",
+        tutors: "/api/tutors",
+          admin: "/api/admin",
       students: "/api/students",
     },
   });
