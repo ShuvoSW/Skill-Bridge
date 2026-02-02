@@ -5,6 +5,8 @@ import { useUser } from "@/lib/user-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
+import { getApiBaseUrl } from "@/lib/api-url";
+
 export default function TutorDetailsPage() {
   const { user } = useUser();
   const params = useParams();
@@ -13,7 +15,7 @@ export default function TutorDetailsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const base = getApiBaseUrl();
     const tutorUrl = base.endsWith("/api") ? `${base}/tutors/${params.id}` : `${base}/api/tutors/${params.id}`;
     
     // Fetch tutor details
@@ -136,13 +138,16 @@ export default function TutorDetailsPage() {
               </div>
 
               <div>
-                <p className="text-sm text-muted-foreground">Subjects</p>
+                <p className="text-sm text-muted-foreground">Categories</p>
                 <div className="mt-1 flex flex-wrap gap-2">
-                  {tutor.subjects?.map((subject: string) => (
-                    <span key={subject} className="rounded-full bg-primary/10 px-3 py-1 text-sm">
-                      {subject}
+                  {tutor.categories?.map((category: any) => (
+                    <span key={category.id} className="rounded-full bg-primary/10 px-3 py-1 text-sm">
+                      {category.name}
                     </span>
                   ))}
+                  {(!tutor.categories || tutor.categories.length === 0) && (
+                    <span className="text-sm text-muted-foreground">No categories selected</span>
+                  )}
                 </div>
               </div>
 

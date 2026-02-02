@@ -1,5 +1,6 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { getApiBaseUrl } from "./api-url";
 
 type UserType = any | null;
 type UserContextType = {
@@ -16,7 +17,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const base = getApiBaseUrl();
     const url = base.endsWith("/api")
       ? `${base}/user/me`
       : `${base}/api/user/me`;
@@ -27,7 +28,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           const data = await res.json();
           alert(data.message || "Your account has been banned");
           setUser(null);
+          localStorage.removeItem('token');
           return Promise.reject("Banned");
+        }
+        if (res.status === 401) {
+          // Not authenticated - clear any stale data
+          console.log('[UserContext] 401 - clearing stale auth data');
+          localStorage.removeItem('token');
+          return Promise.reject("Not authenticated");
         }
         return res.ok ? res.json() : Promise.reject("Not authenticated");
       })

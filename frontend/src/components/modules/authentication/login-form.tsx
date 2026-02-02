@@ -22,10 +22,19 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useUser } from "@/lib/user-context";
+import { useEffect } from "react";
+import { getApiBaseUrl } from "@/lib/api-url";
 
 export function LoginForm({ ...props }: React.ComponentProps<typeof Card>) {
   const router = useRouter();
   const { setUser } = useUser();
+
+  // Clear any URL query parameters on mount to prevent auto-fill from persisted state
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   const handleGoogleLogin = async () => {
     try {
@@ -63,7 +72,7 @@ export function LoginForm({ ...props }: React.ComponentProps<typeof Card>) {
 
         // Fetch user data and update context immediately
         try {
-          const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+          const base = getApiBaseUrl();
           const url = base.endsWith("/api") ? `${base}/user/me` : `${base}/api/user/me`;
           const userRes = await fetch(url, { credentials: "include" });
           if (userRes.status === 403) {

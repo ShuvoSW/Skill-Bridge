@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { getApiBaseUrl } from "@/lib/api-url";
 
 export default function CreateBookingForm({ tutorIdFromQuery }: { tutorIdFromQuery: string }) {
   const [loading, setLoading] = useState(false);
@@ -15,7 +16,7 @@ export default function CreateBookingForm({ tutorIdFromQuery }: { tutorIdFromQue
 
   useEffect(() => {
     if (tutorIdFromQuery) {
-      const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      const base = getApiBaseUrl();
       const tutorUrl = base.endsWith("/api") ? `${base}/tutors/${tutorIdFromQuery}` : `${base}/api/tutors/${tutorIdFromQuery}`;
       const bookingsUrl = base.endsWith("/api") ? `${base}/bookings/tutor/${tutorIdFromQuery}` : `${base}/api/bookings/tutor/${tutorIdFromQuery}`;
       
@@ -51,7 +52,7 @@ export default function CreateBookingForm({ tutorIdFromQuery }: { tutorIdFromQue
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
     };
-    const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const base = getApiBaseUrl();
     const url = base.endsWith("/api") ? `${base}/bookings` : `${base}/api/bookings`;
     const res = await fetch(url, {
       method: "POST",
@@ -88,7 +89,7 @@ export default function CreateBookingForm({ tutorIdFromQuery }: { tutorIdFromQue
             {tutor && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
                 <p className="text-sm font-semibold text-blue-800">👨‍🏫 Tutor: {tutor.user.name}</p>
-                <p className="text-xs text-blue-600 mt-1">{tutor.subjects?.join(', ')} • ${tutor.hourlyRate}/hr</p>
+                <p className="text-xs text-blue-600 mt-1">{tutor.categories?.map((c: any) => c.name).join(', ') || 'No categories'} • ${tutor.hourlyRate}/hr</p>
               </div>
             )}
             {tutor?.availability && (

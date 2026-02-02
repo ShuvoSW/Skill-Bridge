@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getApiBaseUrl } from "@/lib/api-url";
 
 export default function DashboardPage() {
   const [profile, setProfile] = useState<any>(null);
@@ -14,13 +15,16 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [bio, setBio] = useState("");
-  const [subjects, setSubjects] = useState("");
   const [availability, setAvailability] = useState("");
   const [averageRating, setAverageRating] = useState<number | null>(null);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const router = useRouter();
 
   useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const apiUrl = getApiBaseUrl();
+    
+    // Fetch user profile
     fetch(`${apiUrl}/api/user/me`, { credentials: "include" })
       .then(async (res) => {
         if (res.status === 401) {
@@ -33,8 +37,12 @@ export default function DashboardPage() {
           setProfile(data.data);
           if (data.data.tutorProfile) {
             setBio(data.data.tutorProfile.bio || "");
-            setSubjects(Array.isArray(data.data.tutorProfile.subjects) ? data.data.tutorProfile.subjects.join(", ") : data.data.tutorProfile.subjects);
             setAvailability(data.data.tutorProfile.availability || "");
+            
+            // Set selected categories
+            if (data.data.tutorProfile.categories) {
+              setSelectedCategoryIds(data.data.tutorProfile.categories.map((c: any) => c.id));
+            }
             
             // Calculate average rating
             if (data.data.tutorProfile.reviews && data.data.tutorProfile.reviews.length > 0) {
@@ -47,10 +55,20 @@ export default function DashboardPage() {
         }
         setLoading(false);
       });
+    
+    // Fetch all categories
+    fetch(`${apiUrl}/api/categories`, { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setCategories(data.data);
+        }
+      })
+      .catch(() => console.error("Failed to load categories"));
   }, [router]);
 
   const handleUpdateTutorProfile = async () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const apiUrl = getApiBaseUrl();
     const url = apiUrl.endsWith("/api") ? `${apiUrl}/tutors/profile` : `${apiUrl}/api/tutors/profile`;
     
     const res = await fetch(url, {
@@ -59,8 +77,8 @@ export default function DashboardPage() {
       credentials: "include",
       body: JSON.stringify({
         bio,
-        subjects: subjects.split(",").map((s) => s.trim()),
         availability,
+        categoryIds: selectedCategoryIds,
       }),
     });
     
@@ -73,6 +91,14 @@ export default function DashboardPage() {
       const refreshData = await refreshRes.json();
       if (refreshData.success) {
         setProfile(refreshData.data);
+        // Update all state with refreshed data
+        if (refreshData.data.tutorProfile) {
+          setBio(refreshData.data.tutorProfile.bio || "");
+          setAvailability(refreshData.data.tutorProfile.availability || "");
+          if (refreshData.data.tutorProfile.categories) {
+            setSelectedCategoryIds(refreshData.data.tutorProfile.categories.map((c: any) => c.id));
+          }
+        }
       }
     } else {
       toast.error(data.message || "Failed to update profile");
@@ -143,21 +169,6 @@ export default function DashboardPage() {
                         )}
                       </div>
                       <div className="sm:col-span-2">
-                        <p className="text-sm text-muted-foreground mb-2">Subjects</p>
-                        {editing ? (
-                          <>
-                            <Input
-                              value={subjects}
-                              onChange={(e) => setSubjects(e.target.value)}
-                              placeholder="Math, Physics, Chemistry"
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">Separate subjects with commas</p>
-                          </>
-                        ) : (
-                          <p className="font-medium">{Array.isArray(profile.tutorProfile.subjects) ? profile.tutorProfile.subjects.join(", ") : profile.tutorProfile.subjects}</p>
-                        )}
-                      </div>
-                      <div className="sm:col-span-2">
                         <p className="text-sm text-muted-foreground mb-2">Availability</p>
                         {editing ? (
                           <>
@@ -174,14 +185,54 @@ export default function DashboardPage() {
                           <p className="font-medium">{profile.tutorProfile.availability || "Not set"}</p>
                         )}
                       </div>
+                      <div className="sm:col-span-2">
+                        <p className="text-sm text-muted-foreground mb-2">Categories</p>
+                        {editing ? (
+                          <>
+                            <div className="flex flex-wrap gap-2">
+                              {categories.map((category) => (
+                                <label
+                                  key={category.id}
+                                  className={`cursor-pointer rounded-full px-4 py-2 text-sm border transition-colors ${
+                                    selectedCategoryIds.includes(category.id)
+                                      ? "bg-primary text-primary-foreground border-primary"
+                                      : "bg-background hover:bg-muted border-input"
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    className="hidden"
+                                    checked={selectedCategoryIds.includes(category.id)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedCategoryIds([...selectedCategoryIds, category.id]);
+                                      } else {
+                                        setSelectedCategoryIds(selectedCategoryIds.filter(id => id !== category.id));
+                                      }
+                                    }}
+                                  />
+                                  {category.name}
+                                </label>
+                              ))}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">Select categories that match your expertise</p>
+                          </>
+                        ) : (
+                          <p className="font-medium">
+                            {profile.tutorProfile.categories && profile.tutorProfile.categories.length > 0
+                              ? profile.tutorProfile.categories.map((c: any) => c.name).join(", ")
+                              : "No categories selected"}
+                          </p>
+                        )}
+                      </div>
                       {editing && (
                         <div className="sm:col-span-2 flex gap-2">
                           <Button onClick={handleUpdateTutorProfile}>Save Changes</Button>
                           <Button variant="outline" onClick={() => {
                             setEditing(false);
                             setBio(profile.tutorProfile.bio || "");
-                            setSubjects(Array.isArray(profile.tutorProfile.subjects) ? profile.tutorProfile.subjects.join(", ") : profile.tutorProfile.subjects);
                             setAvailability(profile.tutorProfile.availability || "");
+                            setSelectedCategoryIds(profile.tutorProfile.categories?.map((c: any) => c.id) || []);
                           }}>Cancel</Button>
                         </div>
                       )}
