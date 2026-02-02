@@ -31,16 +31,26 @@ export const auth = betterAuth({
   })(),
   advanced: {
     useSecureCookies: true,
+    redirectOnLogin: process.env.APP_URL || "http://localhost:3000",
   },
   session: {
     cookie: {
-      name: "__Secure-better-auth.session_token",
-      sameSite: "none",
+      name:
+        process.env.NODE_ENV === "production"
+          ? "__Secure-better-auth.session_token"
+          : "better-auth.session_token",
+      // Use Lax for same-site (proxy) or None for cross-site
+      // If using Next.js proxy (recommended), use Lax for better security
+      // If calling backend directly from different domain, use None
+      sameSite: "none" as const, // Changed back to 'none' for OAuth compatibility
       path: "/",
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
+      // Don't set domain - let it default to the current domain
     },
-  } as unknown as any,
+    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    updateAge: 60 * 60 * 24, // 1 day
+  },
   user: {
     additionalFields: {
       role: {

@@ -7,9 +7,9 @@ async function seedAdmin() {
     console.log("***** Admin Seeding Started....");
     const adminData = {
       name: "Admin",
-      email: "admin@skillbridge.com",
+      email: "admin@admin.com",
       role: UserRole.ADMIN,
-      password: "admin123",
+      password: "admin1234",
     };
     console.log("***** Checking Admin Exist or not");
     // check user exist on db or not

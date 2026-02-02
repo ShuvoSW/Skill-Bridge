@@ -26,12 +26,23 @@ declare global {
 const auth = (...roles: UserRole[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
+      // Log full auth debugging info
+      console.log(`[AuthMiddleware] ${req.method} ${req.path}`);
+      console.log(`[AuthMiddleware] Origin:`, req.headers.origin);
+      console.log(`[AuthMiddleware] Cookie header:`, req.headers.cookie);
+
       // get user session
       const session = await betterAuth.api.getSession({
         headers: req.headers as any,
       });
 
+      console.log(
+        `[AuthMiddleware] Session result:`,
+        session ? `valid (user: ${session.user.id})` : "null/invalid",
+      );
+
       if (!session) {
+        console.log(`[AuthMiddleware] 401 - No session found`);
         return res.status(401).json({
           success: false,
           message: "You are not authorized!",
