@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { Prisma } from "../../generated/prisma/client";
+import { Prisma } from "@prisma/client";
 
 function errorHandler(
   err: any,
@@ -11,12 +11,12 @@ function errorHandler(
   let errorMessage = "Internal Server Error";
   let errorDetails = err;
 
-
+  // PrismaClientValidationError
   if (err instanceof Prisma.PrismaClientValidationError) {
     statusCode = 400;
     errorMessage = "You provide incorrect field type or missing fields!";
   }
-
+  // PrismaClientKnownRequestError
   else if (err instanceof Prisma.PrismaClientKnownRequestError) {
     if (err.code === "P2025") {
       statusCode = 404;

@@ -114,10 +114,43 @@ const updateUserStatus = async (
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
+    include: {
+      tutorProfile: true,
+    },
   });
 
   if (!user) {
     throw new Error("User not found");
+  }
+
+  // If changing from TUTOR to another role, delete the tutor profile
+  if (
+    data.role &&
+    user.role === "TUTOR" &&
+    data.role !== "TUTOR" &&
+    user.tutorProfile
+  ) {
+    await prisma.tutorProfile.delete({
+      where: { userId: userId },
+    });
+  }
+
+  // If changing TO TUTOR from another role, create a default tutor profile
+  if (
+    data.role &&
+    data.role === "TUTOR" &&
+    user.role !== "TUTOR" &&
+    !user.tutorProfile
+  ) {
+    await prisma.tutorProfile.create({
+      data: {
+        userId: userId,
+        bio: "Experienced tutor ready to help students succeed",
+        subjects: ["General"],
+        hourlyRate: 25.0,
+        experience: 1,
+      },
+    });
   }
 
   const updatedUser = await prisma.user.update({

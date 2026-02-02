@@ -16,24 +16,69 @@ import studentRoutes from "./modules/students/student.route";
 
 const app: Application = express();
 
+// Configure CORS to only allow trusted origins (from env TRUSTED_ORIGINS or APP_URL)
+const trustedOrigins = (() => {
+  if (process.env.TRUSTED_ORIGINS)
+    return process.env.TRUSTED_ORIGINS.split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  if (process.env.APP_URL) return [process.env.APP_URL];
+  return [];
+})();
+
 app.use(
   cors({
-    origin: true, // Allow all origins for testing (change back later)
+    origin: (origin, cb) => {
+      // allow non-browser requests with no origin
+      if (!origin) return cb(null, true);
+      if (trustedOrigins.length === 0) return cb(null, true);
+      if (trustedOrigins.includes(origin)) return cb(null, true);
+      return cb(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   }),
 );
 
+// Log auth-related requests for debugging origin/cookie issues
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api/auth") || req.path === "/api/user/me") {
+    console.log(
+      `[AuthDebug] ${req.method} ${req.path} origin=${req.headers.origin} cookie=${req.headers.cookie}`,
+    );
+  }
+  next();
+});
+
 app.use(express.json());
 
 // Mount custom auth routes at /api/user for /api/user/me
-
 app.use("/api/user", authRoutes);
-
-// TEST ROUTE: Check if /api/auth is being handled
-app.get("/api/auth/test", (req, res) => res.send("auth route works"));
 
 // better-auth routes - use middleware instead of route
 app.use("/api/auth", (req, res, next) => {
+  // Intercept res.setHeader to force SameSite=None; Secure on all Set-Cookie headers
+  const origSetHeader = res.setHeader.bind(res);
+  res.setHeader = function (name: string, value: any) {
+    if (String(name).toLowerCase() === "set-cookie") {
+      const cookies = Array.isArray(value) ? value : [String(value)];
+      const rewritten = cookies.map((c: string) => {
+        let cookie = String(c);
+        // Remove any existing SameSite directive
+        cookie = cookie.replace(/;\s*SameSite=[^;]*/gi, "");
+        // Ensure Secure is present
+        if (!/;\s*Secure/i.test(cookie)) cookie += "; Secure";
+        // Add SameSite=None
+        cookie += "; SameSite=None";
+        return cookie;
+      });
+      console.log(
+        `[AuthDebug] Set-Cookie rewritten to: ${JSON.stringify(rewritten)}`,
+      );
+      return origSetHeader.call(this, name, rewritten);
+    }
+    return origSetHeader.call(this, name, value);
+  };
+
   return toNodeHandler(auth)(req, res).catch((err) => {
     next(err);
   });

@@ -23,10 +23,20 @@ const getCurrentUser = async (userId: string) => {
           hourlyRate: true,
           experience: true,
           availability: true,
+          reviews: {
+            select: {
+              rating: true,
+            },
+          },
         },
       },
     },
   });
+
+  // Check if user is banned
+  if (user && user.status === "BANNED") {
+    throw new Error("Your account has been banned. Please contact support.");
+  }
 
   return user;
 };

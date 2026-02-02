@@ -116,40 +116,6 @@ const deleteCategory = async (
   } catch (error) {
     next(error);
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
 };
 
 export const CategoryController = {

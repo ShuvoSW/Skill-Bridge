@@ -167,7 +167,21 @@ const updateBookingStatus = async (
       message: "Booking status updated successfully",
       data: updatedBooking,
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("[BookingController][updateBookingStatus] Error:", error);
+    // Handle validation errors with 400 status
+    if (
+      error.message &&
+      (error.message.includes("not found") ||
+        error.message.includes("Only") ||
+        error.message.includes("can only") ||
+        error.message.includes("Cannot"))
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
     next(error);
   }
 };
@@ -237,6 +251,27 @@ const getTutorBookings = async (
   }
 };
 
+// Get bookings by tutor ID (public route for viewing tutor's booked slots)
+const getBookingsByTutorId = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { tutorId } = req.params;
+    
+    const bookings = await bookingService.getBookingsByTutorId(tutorId);
+    
+    res.status(200).json({
+      success: true,
+      count: bookings.length,
+      data: bookings,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const BookingController = {
   getAllBookings,
   getBookingById,
@@ -244,4 +279,5 @@ export const BookingController = {
   updateBookingStatus,
   deleteBooking,
   getTutorBookings,
+  getBookingsByTutorId,
 };

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { TutorController } from "./tutor.controller";
 import auth, { UserRole } from "../../middlewares/auth";
 
-const router: Router = Router();
+const router = Router();
 
 // Public routes
 router.get("/", TutorController.getAllTutors);
@@ -15,6 +15,12 @@ router.get("/:id/availability", TutorController.getTutorAvailability);
 router.post("/become-tutor", auth(), TutorController.createTutorProfile);
 
 // Tutor's own profile management
+router.patch(
+  "/profile",
+  auth(UserRole.TUTOR),
+  TutorController.updateMyProfile,
+);
+
 router.put(
   "/availability",
   auth(UserRole.TUTOR),

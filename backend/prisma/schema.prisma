@@ -1,6 +1,6 @@
+
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -11,7 +11,7 @@ model User {
   id            String   @id @default(uuid())
   name          String
   email         String   @unique
-  emailVerified Boolean  @default(false)
+  emailVerified Boolean  @default(true)
   image         String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -44,6 +44,7 @@ model Session {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("session")
+  @@index([userId])
 }
 
 model Account {
@@ -78,6 +79,7 @@ model Verification {
 
   @@unique([identifier, value])
   @@map("verification")
+  @@index([identifier])
 }
 
 model TutorProfile {

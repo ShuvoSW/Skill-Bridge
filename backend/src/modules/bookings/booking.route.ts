@@ -2,7 +2,7 @@ import { Router } from "express";
 import { BookingController } from "./booking.controller";
 import auth, { UserRole } from "../../middlewares/auth";
 
-const router: Router = Router();
+const router = Router();
 
 console.log("Booking routes loaded");
 
@@ -13,12 +13,15 @@ router.post("/", auth(UserRole.STUDENT), BookingController.createBooking);
 router.get("/", auth(), BookingController.getAllBookings);
 router.get("/:id", auth(), BookingController.getBookingById);
 
+// Get bookings for a specific tutor by tutor ID (public route for viewing tutor availability)
+router.get("/tutor/:tutorId", BookingController.getBookingsByTutorId);
+
 // Tutor-specific bookings
 router.get("/tutor", auth(UserRole.TUTOR), BookingController.getTutorBookings);
 
 router.patch(
   "/:id/status",
-  auth(UserRole.TUTOR, UserRole.ADMIN),
+  auth(UserRole.STUDENT, UserRole.TUTOR, UserRole.ADMIN),
   BookingController.updateBookingStatus,
 );
 

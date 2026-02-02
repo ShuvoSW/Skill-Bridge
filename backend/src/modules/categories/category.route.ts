@@ -2,7 +2,7 @@ import { Router } from "express";
 import { CategoryController } from "./category.controller";
 import auth, { UserRole } from "../../middlewares/auth";
 
-const router: Router = Router();
+const router = Router();
 
 // Get all categories (public)
 router.get("/", CategoryController.getAllCategories);
