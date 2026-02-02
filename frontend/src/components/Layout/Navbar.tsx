@@ -65,12 +65,12 @@ const Navbar = ({
     { title: "Home", url: "/" },
 
     {
-      title: "Pricing",
-      url: "#",
+      title: "Search",
+      url: "/search",
     },
     {
-      title: "Blog",
-      url: "#",
+      title: "Featured",
+      url: "/tutors",
     },
   ],
   auth = {
