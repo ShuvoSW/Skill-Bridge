@@ -1,0 +1,162 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { useUser } from "@/lib/user-context";
+
+
+export default function BookingsPage() {
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useUser();
+
+  useEffect(() => {
+    const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const url = base.endsWith("/api") ? `${base}/bookings` : `${base}/api/bookings`;
+    fetch(url, { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) setBookings(data.data);
+        else toast.error("Failed to load bookings");
+      })
+      .catch(() => toast.error("Failed to load bookings"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this booking?")) return;
+    const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const url = base.endsWith("/api") ? `${base}/bookings/${id}` : `${base}/api/bookings/${id}`;
+    const res = await fetch(url, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast.success("Booking deleted");
+      setBookings((prev) => prev.filter((b) => b.id !== id));
+    } else {
+      toast.error("Failed to delete booking");
+    }
+  };
+
+  if (loading) return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
+
+  const now = new Date();
+  const upcomingBookings = bookings.filter(b => new Date(b.startTime) > now);
+  const pastBookings = bookings.filter(b => new Date(b.startTime) <= now);
+
+  return (
+    <div className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-4xl space-y-6">
+        <h1 className="text-3xl font-bold">My Bookings</h1>
+        
+        {/* Upcoming Bookings */}
+        <div className="space-y-4">
+          <h2 className="text-2xl font-semibold text-primary">📅 Upcoming Bookings ({upcomingBookings.length})</h2>
+          {upcomingBookings.length === 0 ? (
+            <p className="text-muted-foreground">No upcoming bookings</p>
+          ) : (
+            upcomingBookings.map((booking) => {
+              const otherParty = booking.tutor?.user?.name || booking.student?.name || booking.tutor?.user?.email || booking.student?.email;
+              // Admin can delete any booking
+              const canDelete = user?.role === "ADMIN";
+              // Student can review completed bookings if not already reviewed
+              const canReview = user?.role === "STUDENT" && booking.status === "completed" && !booking.reviewedByStudent;
+                return (
+                  <Card key={booking.id}>
+                    <CardHeader>
+                      <CardTitle>Booking with {otherParty}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+                        <div className="md:col-span-2 flex flex-col gap-2">
+                          <div>
+                            <span className="font-medium">Status:</span> {booking.status}
+                          </div>
+                          <div>
+                            <span className="font-medium">Start:</span> {new Date(booking.startTime).toLocaleString()}
+                          </div>
+                          <div>
+                            <span className="font-medium">End:</span> {new Date(booking.endTime).toLocaleString()}
+                          </div>
+                        </div>
+                        <div className="md:col-span-1 flex flex-col gap-2 items-stretch">
+                          <a href={`/bookings/${booking.id}`}>
+                            <Button size="sm" variant="outline" className="w-full md:w-auto">View Details</Button>
+                          </a>
+                          {canReview && (
+                            <a href={`/reviews/create?tutorId=${booking.tutorId}`}>
+                              <Button size="sm" variant="default" className="w-full md:w-auto">Give Review</Button>
+                            </a>
+                          )}
+                          {canDelete && (
+                            <Button size="sm" variant="destructive" onClick={() => handleDelete(booking.id)} className="w-full md:w-auto">
+                              Delete
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+            })
+          )}
+        </div>
+
+        {/* Past Bookings */}
+        <div className="space-y-4">
+          <h2 className="text-2xl font-semibold text-muted-foreground">📋 Past Bookings ({pastBookings.length})</h2>
+          {pastBookings.length === 0 ? (
+            <p className="text-muted-foreground">No past bookings</p>
+          ) : (
+            pastBookings.map((booking) => {
+              const otherParty = booking.tutor?.user?.name || booking.student?.name || booking.tutor?.user?.email || booking.student?.email;
+              const canDelete = user?.role === "ADMIN";
+              const canReview = user?.role === "STUDENT" && booking.status === "completed" && !booking.reviewedByStudent;
+                return (
+                  <Card key={booking.id} className="bg-muted/30">
+                    <CardHeader>
+                      <CardTitle>Booking with {otherParty}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+                        <div className="md:col-span-2 flex flex-col gap-2">
+                          <div>
+                            <span className="font-medium">Status:</span> {booking.status}
+                          </div>
+                          <div>
+                            <span className="font-medium">Start:</span> {new Date(booking.startTime).toLocaleString()}
+                          </div>
+                          <div>
+                            <span className="font-medium">End:</span> {new Date(booking.endTime).toLocaleString()}
+                          </div>
+                        </div>
+                        <div className="md:col-span-1 flex flex-col gap-2 items-stretch">
+                          <a href={`/bookings/${booking.id}`}>
+                            <Button size="sm" variant="outline" className="w-full md:w-auto">View Details</Button>
+                          </a>
+                          {canReview && (
+                            <a href={`/reviews/create?tutorId=${booking.tutorId}`}>
+                              <Button size="sm" variant="default" className="w-full md:w-auto">Give Review</Button>
+                            </a>
+                          )}
+                          {canDelete && (
+                            <Button size="sm" variant="destructive" onClick={() => handleDelete(booking.id)} className="w-full md:w-auto">
+                              Delete
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
