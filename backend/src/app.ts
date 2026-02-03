@@ -4,11 +4,9 @@ import { auth } from "./lib/auth";
 import { toNodeHandler } from "better-auth/node";
 import errorHandler from "./middlewares/globalErrorHandler";
 import { notFound } from "./middlewares/notFound";
-
 import tutorRoutes from "./modules/tutors/tutor.route";
 import bookingRoutes from "./modules/bookings/booking.route";
 import authRoutes from "./modules/auth/auth.route";
-
 import categoryRoutes from "./modules/categories/category.route";
 import reviewRoutes from "./modules/reviews/review.route";
 import adminRoutes from "./modules/admin/admin.route";
@@ -45,19 +43,20 @@ app.use((req, res, next) => {
     console.log(
       `[AuthDebug] ${req.method} ${req.path} origin=${req.headers.origin} cookie=${req.headers.cookie}`,
     );
-    
+
     // Handle duplicate session tokens by keeping only the last one
     if (req.headers.cookie) {
-         const cookies = req.headers.cookie.split(";").map((c) => c.trim());
+      const cookies = req.headers.cookie.split(";").map((c) => c.trim());
       const sessionCookies = cookies.filter((c) =>
         c.startsWith("__Secure-better-auth.session_token="),
       );
+
       if (sessionCookies.length > 1) {
-         console.log(
+        console.log(
           `[AuthDebug] Found ${sessionCookies.length} session tokens, using the last one`,
         );
         // Remove duplicate session tokens, keep only the last one
-              const otherCookies = cookies.filter(
+        const otherCookies = cookies.filter(
           (c) => !c.startsWith("__Secure-better-auth.session_token="),
         );
         req.headers.cookie = [

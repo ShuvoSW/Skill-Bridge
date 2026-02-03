@@ -2,7 +2,7 @@ import { Router } from "express";
 import { AuthController } from "./auth.controller";
 import auth from "../../middlewares/auth";
 
-const router = Router();
+const router: Router = Router();
 
 // Protected route - Get current user
 router.get("/me", auth(), AuthController.getCurrentUser);

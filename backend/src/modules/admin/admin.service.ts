@@ -130,7 +130,7 @@ const updateUserStatus = async (
     data.role !== "TUTOR" &&
     user.tutorProfile
   ) {
-     // Check if tutor has any bookings or reviews
+    // Check if tutor has any bookings or reviews
     const [bookingsCount, reviewsCount] = await Promise.all([
       prisma.booking.count({ where: { tutorId: user.tutorProfile.id } }),
       prisma.review.count({ where: { tutorId: user.tutorProfile.id } }),
