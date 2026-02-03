@@ -12,7 +12,7 @@ export default function TutorBookingsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/bookings/tutor", { credentials: "include" })
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/tutor`, { credentials: "include" })   // "http://localhost:5000/api/bookings/tutor"
       .then(async (res) => {
         if (!res.ok) {
           const text = await res.text();

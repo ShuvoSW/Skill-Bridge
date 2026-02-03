@@ -36,8 +36,6 @@ export function LoginForm({ ...props }: React.ComponentProps<typeof Card>) {
     }
   }, []);
 
-
-
   const form = useForm({
     defaultValues: {
       email: "",
