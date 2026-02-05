@@ -4,9 +4,11 @@ import { auth } from "./lib/auth";
 import { toNodeHandler } from "better-auth/node";
 import errorHandler from "./middlewares/globalErrorHandler";
 import { notFound } from "./middlewares/notFound";
+
 import tutorRoutes from "./modules/tutors/tutor.route";
 import bookingRoutes from "./modules/bookings/booking.route";
 import authRoutes from "./modules/auth/auth.route";
+
 import categoryRoutes from "./modules/categories/category.route";
 import reviewRoutes from "./modules/reviews/review.route";
 import adminRoutes from "./modules/admin/admin.route";

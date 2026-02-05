@@ -2,7 +2,7 @@ import { Router } from "express";
 import { ReviewController } from "./review.controller";
 import auth, { UserRole } from "../../middlewares/auth";
 
-const router: Router = Router();
+const router = Router();
 // Get all reviews (admin: all, student: only their own)
 router.get(
   "/",

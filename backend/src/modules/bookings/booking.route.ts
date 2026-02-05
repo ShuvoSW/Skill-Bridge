@@ -2,7 +2,7 @@ import { Router } from "express";
 import { BookingController } from "./booking.controller";
 import auth, { UserRole } from "../../middlewares/auth";
 
-const router: Router = Router();
+const router = Router();
 
 console.log("Booking routes loaded");
 

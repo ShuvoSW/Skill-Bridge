@@ -2,7 +2,7 @@ import { Router } from "express";
 import { TutorController } from "./tutor.controller";
 import auth, { UserRole } from "../../middlewares/auth";
 
-const router: Router = Router();
+const router = Router();
 
 // Public routes
 router.get("/", TutorController.getAllTutors);

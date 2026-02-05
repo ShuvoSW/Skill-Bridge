@@ -25,7 +25,7 @@ async function seedAdmin() {
 
     const backendUrl =
       process.env.BETTER_AUTH_URL ||
-      `http://localhost:${process.env.PORT}`;
+      `http://localhost:${process.env.PORT || 5000}`;
 
     console.log(
       `***** Creating admin via ${backendUrl}/api/auth/sign-up/email`,
